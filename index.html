@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Cotización Cosaris</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <h2>Escanea el QR para entrar al simulador</h2>
+  <div id="qrcode"></div>
+
+  <script>
+    new QRCode(document.getElementById("qrcode"), "https://tunombre.github.io/cotizador/");
+  </script>
+</body>
+</html>
