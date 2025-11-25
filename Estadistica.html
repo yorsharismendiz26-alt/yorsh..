@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estadísticas — Legendary Saiyan Gym</title>
+
+<!-- CHART.JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- XLSX EXPORT -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<!-- jsPDF PARA PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  body{
+    background:#f4f4f4;
+    font-family: Arial, sans-serif;
+    margin:0; padding:20px;
+  }
+  .container{
+    max-width:900px;
+    margin:0 auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  }
+  h1{text-align:center;margin-bottom:10px;}
+
+  .btnBox{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+    justify-content:center;
+  }
+  button{
+    padding:10px 15px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:15px;
+    color:white;
+  }
+  .borrar{ background:#d9534f;}
+  .excel{ background:#5cb85c;}
+  .csv{ background:#0275d8;}
+  .pdf{ background:#6f42c1;}
+  .card{
+    background:#eef3ff;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+  }
+  canvas{ margin-top:20px; }
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>📊 Estadísticas — Legendary Saiyan Gym</h1>
+
+<div class="btnBox">
+  <button class="excel" onclick="exportExcel()">📘 Exportar a Excel</button>
+  <button class="csv" onclick="exportCSV()">📄 Exportar CSV</button>
+  <button class="pdf" onclick="exportPDF()">📕 Exportar PDF</button>
+  <button class="borrar" onclick="borrarTodo()">🗑️ Borrar todas las encuestas</button>
+</div>
+
+<div class="card">
+  <h2>Total de encuestas: <span id="totalEncuestas">0</span></h2>
+</div>
+
+<h2>1. Género</h2><canvas id="chartGenero"></canvas>
+
+<h2>2. ¿Se inscribirían?</h2><canvas id="chartP1"></canvas>
+
+<h2>3. Frecuencia semanal</h2><canvas id="chartP2"></canvas>
+
+<h2>4. Problema actual</h2><canvas id="chartP3"></canvas>
+
+<h2>5. Tipo de gimnasio preferido</h2><canvas id="chartP4"></canvas>
+
+<h2>6. Servicios elegidos (P5)</h2><canvas id="chartP5"></canvas>
+
+<h2>7. Mensualidad</h2><canvas id="chartP6"></canvas>
+
+<h2>8. Membresía</h2><canvas id="chartP7"></canvas>
+
+<h2>9. Distancia</h2><canvas id="chartP8"></canvas>
+
+<h2>10. Horario</h2><canvas id="chartP9"></canvas>
+
+<h2>11. Precio inscripción</h2><canvas id="chartP10"></canvas>
+
+</div>
+
+<script>
+
+// -------------------------------------------
+// LEER LOCALSTORAGE
+// -------------------------------------------
+const data = JSON.parse(localStorage.getItem("encuestasGym") || "[]");
+
+document.getElementById("totalEncuestas").textContent = data.length;
+
+// -------------------------------------------
+// FUNCIONES DE CONTEO
+// -------------------------------------------
+function contar(campo){
+  const r = {};
+  data.forEach(enc => {
+    const v = enc[campo];
+    if(v){
+      r[v] = (r[v] || 0) + 1;
+    }
+  });
+  return r;
+}
+
+function crearGrafico(id, titulo, datos){
+  new Chart(document.getElementById(id), {
+    type: "bar",
+    data: {
+      labels: Object.keys(datos),
+      datasets: [{
+        label: titulo,
+        data: Object.values(datos),
+        borderWidth: 1
+      }]
+    },
+    options: { responsive: true }
+  });
+}
+
+// -------------------------------------------
+// SERVICIOS p5 (ARRAY)
+// -------------------------------------------
+const serviciosCount = {};
+data.forEach(enc => {
+  if(enc.p5){
+    enc.p5.forEach(s => {
+      serviciosCount[s] = (serviciosCount[s] || 0) + 1;
+    });
+  }
+});
+
+// -------------------------------------------
+// GRÁFICOS
+// -------------------------------------------
+
+const generoCount = contar("genero");
+new Chart(document.getElementById("chartGenero"), {
+  type: "pie",
+  data:{
+    labels: Object.keys(generoCount),
+    datasets:[{ data: Object.values(generoCount) }]
+  }
+});
+
+crearGrafico("chartP1", "¿Se inscribirían?", contar("p1"));
+crearGrafico("chartP2", "Frecuencia", contar("p2"));
+crearGrafico("chartP3", "Problema actual", contar("p3"));
+crearGrafico("chartP4", "Tipo de gym", contar("p4"));
+crearGrafico("chartP5", "Servicios", serviciosCount);
+crearGrafico("chartP6", "Mensualidad", contar("p6"));
+crearGrafico("chartP7", "Membresía", contar("p7"));
+crearGrafico("chartP8", "Distancia", contar("p8"));
+crearGrafico("chartP9", "Horario", contar("p9"));
+crearGrafico("chartP10", "Inscripción", contar("p10"));
+
+
+// -------------------------------------------
+// EXPORTAR A EXCEL
+// -------------------------------------------
+function exportExcel(){
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, "Resultados");
+  XLSX.writeFile(wb, "encuesta_gym.xlsx");
+}
+
+// -------------------------------------------
+// EXPORTAR CSV
+// -------------------------------------------
+function exportCSV(){
+  const ws = XLSX.utils.json_to_sheet(data);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "encuesta_gym.csv";
+  a.click();
+}
+
+// -------------------------------------------
+// EXPORTAR PDF
+// -------------------------------------------
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(18);
+  doc.text("Resultados — Legendary Saiyan Gym", 10, 10);
+
+  doc.setFontSize(12);
+  let y = 20;
+
+  data.forEach((enc, i) => {
+    doc.text(`Encuesta #${i+1}`, 10, y);
+    y += 6;
+
+    Object.entries(enc).forEach(([k, v]) => {
+      doc.text(`${k}: ${Array.isArray(v) ? v.join(", ") : v}`, 10, y);
+      y += 6;
+
+      if(y > 270){
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    y += 5;
+  });
+
+  doc.save("encuesta_gym.pdf");
+}
+
+// -------------------------------------------
+// BORRAR TODO
+// -------------------------------------------
+function borrarTodo(){
+  if(confirm("¿Seguro que deseas borrar TODAS las encuestas?")){
+    localStorage.removeItem("encuestasGym");
+    alert("Datos eliminados.");
+    location.reload();
+  }
+}
+
+</script>
+
+</body>
+</html>
